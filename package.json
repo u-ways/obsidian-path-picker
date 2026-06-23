@@ -32,7 +32,6 @@
 		"@eslint/js": "^9",
 		"@types/node": "^22",
 		"@vitest/coverage-v8": "^3",
-		"builtin-modules": "^4",
 		"esbuild": "^0.25.0",
 		"eslint": "^9",
 		"globals": "^15",
