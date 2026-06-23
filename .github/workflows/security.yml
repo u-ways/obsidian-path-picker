@@ -1,0 +1,80 @@
+name: Security
+
+# Generates a CycloneDX SBOM (anchore/sbom-action -> syft) and scans it for known
+# vulnerabilities (anchore/scan-action -> grype).
+#   - On pull requests: scan as a gate (fails at/above SEVERITY_CUTOFF).
+#   - After "Draft Release" completes on main: also attach the SBOM to the draft release.
+# Actions are SHA-pinned; clear table output, no PR comments or job summaries.
+
+on:
+    pull_request:
+        branches: [main]
+    workflow_run:
+        workflows: ["Draft Release"]
+        types: [completed]
+
+concurrency:
+    group: security-${{ github.event.pull_request.number || github.run_id }}
+    cancel-in-progress: true
+
+permissions:
+    contents: write # upload the SBOM asset to the draft release (workflow_run path)
+
+env:
+    SBOM_FILE: sbom.cdx.json
+    # Fail the job on findings at or above this severity: negligible|low|medium|high|critical.
+    SEVERITY_CUTOFF: high
+
+jobs:
+    security:
+        name: SBOM + vulnerability scan
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Generate SBOM (syft)
+              uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+              with:
+                  path: .
+                  format: cyclonedx-json
+                  output-file: ${{ env.SBOM_FILE }}
+                  upload-artifact: false
+                  upload-release-assets: false
+              env:
+                  # syft skips dev dependencies by default; include them so the scan covers the
+                  # full build/test toolchain, not just the single bundled runtime dependency.
+                  SYFT_JAVASCRIPT_INCLUDE_DEV_DEPENDENCIES: "true"
+
+            - name: Summarise SBOM
+              #language=bash
+              run: |
+                  echo "SBOM components: $(jq '.components | length' "$SBOM_FILE")"
+
+            - name: Attach SBOM to the draft release
+              if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' }}
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  REPO: ${{ github.repository }}
+              #language=bash
+              run: |
+                  set -euo pipefail
+                  tag="$(gh release list --repo "$REPO" --limit 20 \
+                    --json tagName,isDraft,createdAt \
+                    --jq 'map(select(.isDraft)) | sort_by(.createdAt) | reverse | .[0].tagName // ""')"
+                  if [[ -z "$tag" ]]; then
+                    echo "No draft release found - skipping SBOM attachment."
+                    exit 0
+                  fi
+                  echo "Attaching $SBOM_FILE to draft release $tag..."
+                  gh release upload "$tag" "$SBOM_FILE" --clobber --repo "$REPO"
+                  echo "Attached $SBOM_FILE to $tag."
+
+            - name: Scan SBOM (grype)
+              uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+              with:
+                  sbom: ${{ env.SBOM_FILE }}
+                  output-format: table
+                  severity-cutoff: ${{ env.SEVERITY_CUTOFF }}
+                  fail-build: true
