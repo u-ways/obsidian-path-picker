@@ -77,7 +77,7 @@ Walking and previews use Node's `fs`; fuzzy matching uses
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev environment, the vault live-reload
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for the dev environment, the vault live-reload
 workflow, and how to run the tests.
 
 ## License
