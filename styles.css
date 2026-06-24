@@ -42,8 +42,8 @@
 .ip-body {
 	display: flex;
 	gap: var(--size-4-2);
-	/* +30% taller than the original 60vh. */
-	height: 78vh;
+	/* 60vh (original) → 78vh (+30%) → 54.6vh (−30%). */
+	height: 54.6vh;
 	min-height: 0;
 }
 
