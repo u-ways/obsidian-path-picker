@@ -43,6 +43,12 @@ export class FileSystemAdapter {
 	}
 }
 
+// Vault entry base classes. The UI imports these as values (it routes on
+// `instanceof TFile` / `instanceof TFolder`), so the stub must provide them.
+export class TAbstractFile {}
+export class TFile extends TAbstractFile {}
+export class TFolder extends TAbstractFile {}
+
 export function normalizePath(p: string): string {
 	return p;
 }

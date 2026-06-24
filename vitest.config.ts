@@ -16,6 +16,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			obsidian: path.resolve(root, "test/mocks/obsidian.ts"),
+			electron: path.resolve(root, "test/mocks/electron.ts"),
 		},
 	},
 });
