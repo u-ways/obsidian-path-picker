@@ -1,9 +1,11 @@
-import { FileSystemAdapter, Modal, Notice } from "obsidian";
-import type { App } from "obsidian";
+import { FileSystemAdapter, Modal, Notice, TFile, TFolder } from "obsidian";
+import type { App, TAbstractFile } from "obsidian";
+import { shell } from "electron";
 import { stat } from "../core/fs-read";
 import * as os from "os";
 import { walk } from "../core/walker";
 import { Matcher, type MatchResult } from "../core/matcher";
+import { locateInVault } from "../core/open";
 import { previewDir, previewFile } from "../core/preview";
 import { getPrism, prismLangFor, shouldHighlight } from "../core/prism";
 import { addRecentRoot } from "../core/recent";
@@ -114,7 +116,7 @@ export class InsertPathModal extends Modal {
 
 		contentEl.createDiv({
 			cls: "ip-footer",
-			text: "↑↓ move · Enter insert · Tab dir/file · Ctrl+O root · Esc close",
+			text: "↑↓ move · Enter insert · Alt+Enter open · Tab dir/file · Ctrl+O root · Esc close",
 		});
 
 		this.updateRootBar();
@@ -171,6 +173,7 @@ export class InsertPathModal extends Modal {
 		this.scope.register(["Ctrl"], "n", () => this.move(1));
 		this.scope.register(["Ctrl"], "p", () => this.move(-1));
 		this.scope.register([], "Enter", () => this.choose());
+		this.scope.register(["Alt"], "Enter", () => this.openSelected());
 		this.scope.register([], "Tab", () => this.toggleMode());
 		this.scope.register(["Mod"], "o", () => this.openRootSwitcher());
 	}
@@ -281,9 +284,10 @@ export class InsertPathModal extends Modal {
 			const row = this.resultsEl.createDiv({ cls: "ip-row" });
 			if (index === this.selectedIndex) row.addClass("is-selected");
 			this.renderHighlighted(row, match.rel, match.positions);
-			row.addEventListener("click", () => {
+			row.addEventListener("click", (evt) => {
 				this.selectedIndex = index;
-				this.choose();
+				if (evt.altKey) this.openSelected();
+				else this.choose();
 			});
 			this.rowEls.push(row);
 		});
@@ -390,6 +394,78 @@ export class InsertPathModal extends Modal {
 		return false;
 	}
 
+	/**
+	 * Open the selected entry instead of inserting it (Alt+Enter / Alt+click).
+	 * Entries inside the vault open in Obsidian — a file as a note in a new tab, a
+	 * folder revealed in the File Explorer — and everything else opens in the OS
+	 * default application for its type.
+	 */
+	private openSelected(): false {
+		const match = this.results[this.selectedIndex];
+		if (!match) return false;
+		const abs = this.entryMap.get(match.rel);
+		if (abs === undefined) return false;
+
+		const loc = locateInVault(abs, this.vaultBasePath());
+		this.close();
+
+		if (loc.inVault && loc.relativePath !== null) {
+			const entry: TAbstractFile | null =
+				loc.relativePath === ""
+					? this.app.vault.getRoot()
+					: this.app.vault.getAbstractFileByPath(loc.relativePath);
+			if (entry instanceof TFile) {
+				this.app.workspace
+					.getLeaf("tab")
+					.openFile(entry)
+					.catch(() => new Notice(`Insert Path: cannot open ${abs}`));
+				return false;
+			}
+			if (entry instanceof TFolder && this.revealFolder(entry)) {
+				return false;
+			}
+			// Either not tracked by Obsidian (e.g. under a hidden/excluded folder) or
+			// the File Explorer is unavailable — fall through to the OS default app.
+		}
+
+		void this.openExternally(abs);
+		return false;
+	}
+
+	/**
+	 * Reveal and select a vault folder in the File Explorer sidebar. Returns false
+	 * when the File Explorer isn't available so the caller can fall back.
+	 *
+	 * `revealInFolder` is the File Explorer view's own "reveal in navigation" hook —
+	 * it opens the sidebar, expands the tree down to the folder and selects it. It is
+	 * an internal method (no public API reveals an arbitrary folder), so we
+	 * feature-detect it rather than assume it stays.
+	 */
+	private revealFolder(folder: TFolder): boolean {
+		const leaf = this.app.workspace.getLeavesOfType("file-explorer")[0];
+		const view = leaf?.view as
+			| Partial<{ revealInFolder(file: TAbstractFile): void }>
+			| undefined;
+		if (typeof view?.revealInFolder !== "function") return false;
+		try {
+			view.revealInFolder(folder);
+			return true;
+		} catch {
+			// An internal API changed shape under us — let the caller fall back.
+			return false;
+		}
+	}
+
+	/** Hand an absolute path to the desktop's default application for its type. */
+	private async openExternally(abs: string): Promise<void> {
+		try {
+			const error = await shell.openPath(abs);
+			if (error) new Notice(`Insert Path: cannot open ${abs}`);
+		} catch {
+			new Notice(`Insert Path: cannot open ${abs}`);
+		}
+	}
+
 	private toggleMode(): false {
 		this.mode = this.mode === "dir" ? "file" : "dir";
 		this.updateRootBar();
@@ -397,15 +473,19 @@ export class InsertPathModal extends Modal {
 		return false;
 	}
 
-	private openRootSwitcher(): false {
+	/** The vault's absolute base path, or null when it isn't a local-filesystem vault. */
+	private vaultBasePath(): string | null {
 		const adapter = this.app.vault.adapter;
-		const vaultRoot = adapter instanceof FileSystemAdapter ? adapter.getBasePath() : null;
+		return adapter instanceof FileSystemAdapter ? adapter.getBasePath() : null;
+	}
+
+	private openRootSwitcher(): false {
 		new RootSwitcher(
 			this.app,
 			{
 				currentRoot: this.root,
 				homeDir: os.homedir(),
-				vaultRoot,
+				vaultRoot: this.vaultBasePath(),
 				recents: this.plugin.settings.recentRoots,
 			},
 			(root) => void this.setRoot(root),

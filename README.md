@@ -39,6 +39,7 @@ It brings the muscle memory of shell fuzzy finders into the editor, without leav
   to find your sweet spot; the position is remembered across sessions
   (double-click the divider to reset it to 50/50).
 - **Root switching** (`Ctrl/Cmd+O`): jump to home, the vault root, a recent root (the last 5 are remembered), or type/paste a custom path.
+- **Open in place** (`Alt+Enter` / `Alt+click`): open the selection instead of inserting it — in Obsidian when it's a tracked vault entry (note in a new tab, or folder revealed in the File Explorer), otherwise in your OS's default app.
 - **Configurable insertion**: a template decides what gets inserted.
 
 On top of that, it has **no external dependencies**, no `fzf`, `eza`, `bat`, or `fd` binaries.
@@ -54,14 +55,22 @@ Walking and previews use Node's `fs`; fuzzy matching uses [fzf-for-js](https://g
 3. Type to filter; the preview updates as you move the selection.
 4. Press **Enter** to insert the path at the cursor.
 
-| Key          | Action                          |
-| ------------ | ------------------------------- |
-| `↑` / `↓`    | Move selection                  |
-| `Ctrl+N/P`   | Move selection (readline-style) |
-| `Enter`      | Insert the selected path        |
-| `Tab`        | Toggle directory / file mode    |
-| `Ctrl/Cmd+O` | Change the search root          |
-| `Esc`        | Close                           |
+| Key                       | Action                          |
+| ------------------------- | ------------------------------- |
+| `↑` / `↓`                 | Move selection                  |
+| `Ctrl+N/P`                | Move selection (readline-style) |
+| `Enter`                   | Insert the selected path        |
+| `Alt+Enter` / `Alt+click` | Open the selected entry         |
+| `Tab`                     | Toggle directory / file mode    |
+| `Ctrl/Cmd+O`              | Change the search root          |
+| `Esc`                     | Close                           |
+
+**Opening an entry** — `Alt+Enter` (or `Alt+click`) opens the selection instead of
+inserting it. A **tracked vault entry** opens in Obsidian: a file opens as a note in
+a new tab, a folder is revealed in the File Explorer sidebar. Anything else — outside
+the vault, or an untracked in-vault path such as one under a dot-folder (e.g.
+`.obsidian/`) — opens in your operating system's default application for that file
+type (a directory opens in your file manager).
 
 ## Settings
 
