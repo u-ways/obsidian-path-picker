@@ -236,3 +236,43 @@
 	font-family: var(--font-monospace);
 	font-size: var(--font-ui-small);
 }
+
+/* Skip-directories setting: a full-width, resizable, monospace box so the long
+   comma-separated list is easy to read and edit. The whole row stacks vertically
+   (name/description above the box) and is placed last on the settings page. */
+.ip-skip-setting {
+	display: block;
+}
+
+.ip-skip-setting .setting-item-control {
+	/* Stack the textarea and its warning vertically (full width), so the warning
+	   sits BELOW the box instead of to its right (which would shrink the box). */
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: flex-start;
+	padding-top: var(--size-2-2);
+}
+
+.ip-skip-setting .setting-item-control textarea {
+	width: 100%;
+	resize: vertical;
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.5;
+}
+
+/* Inline validation under the box: likely mistakes (missing comma, path separator). */
+.ip-skip-warning {
+	width: 100%;
+	margin-top: var(--size-2-2);
+	color: var(--text-error);
+	font-size: var(--font-ui-smaller);
+}
+
+.ip-skip-warning:empty {
+	display: none;
+}
+
+.ip-skip-warning-line + .ip-skip-warning-line {
+	margin-top: var(--size-2-1);
+}
