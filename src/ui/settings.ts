@@ -1,6 +1,7 @@
 import { PluginSettingTab, Setting } from "obsidian";
 import type { App } from "obsidian";
 import type InsertPathPlugin from "../main";
+import { validateSkip } from "../types";
 
 export class InsertPathSettingTab extends PluginSettingTab {
 	private readonly plugin: InsertPathPlugin;
@@ -38,16 +39,6 @@ export class InsertPathSettingTab extends PluginSettingTab {
 							value.length > 0 ? value : "{path}";
 						await this.plugin.saveSettings();
 					}),
-			);
-
-		new Setting(containerEl)
-			.setName("Skip directories")
-			.setDesc("Comma-separated directory names to prune while walking.")
-			.addText((text) =>
-				text.setValue(this.plugin.settings.skip).onChange(async (value) => {
-					this.plugin.settings.skip = value;
-					await this.plugin.saveSettings();
-				}),
 			);
 
 		new Setting(containerEl)
@@ -143,5 +134,40 @@ export class InsertPathSettingTab extends PluginSettingTab {
 						}
 					}),
 			);
+
+		// Last, because it gets a full-width resizable box: the skip list can be long.
+		new Setting(containerEl)
+			.setName("Skip directories")
+			.setDesc(
+				"Comma-separated directory names pruned while walking. Drag the box's bottom edge to resize it.",
+			)
+			.setClass("ip-skip-setting")
+			.addTextArea((text) => {
+				text.inputEl.rows = 6;
+				const warningEl = text.inputEl.parentElement?.createDiv({ cls: "ip-skip-warning" });
+				const refresh = (value: string): void => {
+					if (warningEl) this.renderSkipIssues(warningEl, value);
+				};
+				text.setValue(this.plugin.settings.skip).onChange(async (value) => {
+					this.plugin.settings.skip = value;
+					await this.plugin.saveSettings();
+					refresh(value);
+				});
+				refresh(this.plugin.settings.skip);
+			});
+	}
+
+	/** Render inline warnings under the Skip directories box for likely mistakes. */
+	private renderSkipIssues(el: HTMLElement, raw: string): void {
+		el.empty();
+		for (const issue of validateSkip(raw)) {
+			const message =
+				issue.kind === "empty"
+					? "Consecutive commas leave an empty entry — remove the extra comma(s)."
+					: issue.kind === "whitespace"
+						? `"${issue.entry}" has a space — did you forget a comma? It is treated as one directory name.`
+						: `"${issue.entry}" has a path separator — only directory names are matched, so it won't match anything.`;
+			el.createDiv({ cls: "ip-skip-warning-line", text: message });
+		}
 	}
 }

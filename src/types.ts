@@ -69,7 +69,7 @@ export const DEFAULT_SETTINGS: InsertPathSettings = {
 	defaultRoot: os.homedir(),
 	insertionTemplate: "{path}",
 	recentRoots: [],
-	skip: ".git, node_modules, .cache",
+	skip: ".git, .svn, .hg, .bzr, node_modules, bower_components, .next, .nuxt, .svelte-kit, .astro, .angular, .vite, .turbo, .parcel-cache, .docusaurus, .expo, .vercel, .netlify, .yarn, .pnpm-store, .output, __pycache__, .venv, venv, .mypy_cache, .pytest_cache, .ruff_cache, .tox, .nox, .eggs, .hypothesis, .ipynb_checkpoints, __pypackages__, .bundle, vendor, target, dist, build, out, obj, coverage, htmlcov, .nyc_output, _site, .jekyll-cache, Pods, DerivedData, Carthage, .dart_tool, .gradle, .terraform, .sass-cache, .serverless, .vagrant, __MACOSX, .idea, .vscode, .cache",
 	followSymlinks: true,
 	includeHidden: true,
 	maxResults: 10000,
@@ -97,4 +97,39 @@ export function parseSkip(skip: string): string[] {
 		.split(",")
 		.map((s) => s.trim())
 		.filter((s) => s.length > 0);
+}
+
+/** A likely mistake in a raw `skip` string, surfaced to the user in settings. */
+export interface SkipIssue {
+	/** The offending entry, trimmed, as the user typed it (empty for the `empty` kind). */
+	entry: string;
+	/** `whitespace`: internal space/newline (probably a missing comma).
+	 *  `separator`: a `/` or `\` (skip matches basenames only, so it can't match).
+	 *  `empty`: consecutive commas, which leave an empty entry. */
+	kind: "whitespace" | "separator" | "empty";
+}
+
+/**
+ * Find obvious mistakes in a raw `skip` string. Each entry is a single directory
+ * basename, so an entry with internal whitespace (usually a forgotten comma) or a
+ * path separator is almost certainly wrong, and consecutive commas (`,,`) leave an
+ * empty entry. A single leading/trailing comma and surrounding whitespace are fine —
+ * `parseSkip` trims and drops them.
+ */
+export function validateSkip(skip: string): SkipIssue[] {
+	const issues: SkipIssue[] = [];
+	for (const part of skip.split(",")) {
+		const entry = part.trim();
+		if (entry.length === 0) continue;
+		if (/\s/.test(entry)) {
+			issues.push({ entry, kind: "whitespace" });
+		} else if (entry.includes("/") || entry.includes("\\")) {
+			issues.push({ entry, kind: "separator" });
+		}
+	}
+	// Consecutive commas (optionally with whitespace between) leave an empty entry.
+	if (/,\s*,/.test(skip)) {
+		issues.push({ entry: "", kind: "empty" });
+	}
+	return issues;
 }

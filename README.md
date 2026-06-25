@@ -75,18 +75,18 @@ type (a directory opens in your file manager).
 
 ## Settings
 
-| Setting                 | Default                      | Notes                                                                            |
-| ----------------------- | ---------------------------- | -------------------------------------------------------------------------------- |
-| Default root            | your home folder             | Where the picker starts.                                                         |
-| Insertion template      | `{path}`                     | Tokens: `{path}` (absolute), `{name}` (basename), `{rel}` (relative).            |
-| Skip directories        | `.git, node_modules, .cache` | Comma-separated directory names pruned while walking.                            |
-| Directory tree depth    | `2`                          | How many levels deep the directory preview tree descends.                        |
-| Colorize directory tree | on                           | Rainbow-colour the tree preview by nesting depth using your theme's palette.     |
-| Follow symlinks         | on                           | Symlink cycles are handled safely.                                               |
-| Include hidden          | on                           | Include dot-files and dot-directories.                                           |
-| Max results             | `10000`                      | A notice appears if the walk is truncated.                                       |
-| Highlight size cap      | `1024` KB                    | Files larger than this preview as plain text. `0` disables the limit.            |
-| Highlight line cap      | `5000` chars                 | Skip highlighting when a line is longer than this (e.g. minified). `0` disables. |
+| Setting                 | Default           | Notes                                                                                                                                                                                                                                  |
+| ----------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Default root            | your home folder  | Where the picker starts.                                                                                                                                                                                                               |
+| Insertion template      | `{path}`          | Tokens: `{path}` (absolute), `{name}` (basename), `{rel}` (relative).                                                                                                                                                                  |
+| Directory tree depth    | `2`               | How many levels deep the directory preview tree descends.                                                                                                                                                                              |
+| Colorize directory tree | on                | Rainbow-colour the tree preview by nesting depth using your theme's palette.                                                                                                                                                           |
+| Follow symlinks         | on                | Symlink cycles are handled safely.                                                                                                                                                                                                     |
+| Include hidden          | on                | Include dot-files and dot-directories.                                                                                                                                                                                                 |
+| Max results             | `10000`           | A notice appears if the walk is truncated.                                                                                                                                                                                             |
+| Highlight size cap      | `1024` KB         | Files larger than this preview as plain text. `0` disables the limit.                                                                                                                                                                  |
+| Highlight line cap      | `5000` chars      | Skip highlighting when a line is longer than this (e.g. minified). `0` disables.                                                                                                                                                       |
+| Skip directories        | common noise dirs | Comma-separated names pruned while walking. The default covers common VCS, dependency, build-output, and cache folders across ecosystems (e.g. `node_modules`, `.venv`, `__pycache__`, `dist`, `build`, `target`, `vendor`, `.cache`). |
 
 **Insertion template examples**
 
