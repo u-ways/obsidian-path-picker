@@ -13,7 +13,8 @@
 </p>
 
 Fuzzy-find any file or directory anywhere under a root (default: your home
-folder) from inside Obsidian, preview it, and insert its path at the cursor.
+folder) from inside Obsidian, preview it, and then **insert** its path at the
+cursor or **open** the entry — as a note in Obsidian, or in your OS's default app.
 
 ## Why
 
@@ -25,7 +26,7 @@ For me, dropping a real filesystem path into a note normally means:
 4. Switch back,
 5. Paste.
 
-Path Picker does the fuzzy-find in a modal and inserts the result where your cursor already is, a seamless user experience.
+Path Picker does the fuzzy-find in a modal and drops the result where your cursor already is — or opens the entry on the spot, no insertion needed — a seamless user experience.
 It brings the muscle memory of shell fuzzy finders into the editor, without leaving Obsidian.
 
 ## Features
