@@ -52,7 +52,7 @@ jobs:
 
             # Step 1 — Claude classifies the bump to a file. Read-only tools + Write: it
             # does NO version maths and cannot publish, delete, create or re-tag a release.
-            - uses: anthropics/claude-code-action@fad22eb3fa582b7357fc0ea48af6645851b884fd # v1.0.161
+            - uses: anthropics/claude-code-action@a874e9ecd7bb36efdad65429c6b35815f5a08f10 # v1.0.210
               with:
                   claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
                   # Use the workflow's own token directly so the action skips its OIDC
